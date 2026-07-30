@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import FormField from '../components/FormField.jsx';
@@ -12,7 +12,15 @@ const NOT_CONNECTED_MESSAGE =
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { startAnonymousSession } = useUser();
+  const { user, loading, startAnonymousSession } = useUser();
+
+  // A returning user with a still-valid session shouldn't see the signup
+  // form again — send them straight to their progress.
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/progress', { replace: true });
+    }
+  }, [loading, user, navigate]);
 
   const [mode, setMode] = useState('signup'); // 'signup' | 'login'
   const [displayName, setDisplayName] = useState('');
@@ -93,7 +101,7 @@ export default function Auth() {
         setFormError({ message: 'Incorrect email or password' });
         return;
       }
-      navigate('/learn');
+      navigate('/progress');
     }
   }
 
@@ -108,6 +116,13 @@ export default function Auth() {
       options: { redirectTo: `${window.location.origin}/onboarding` },
     });
     if (error) setFormError({ message: error.message });
+  }
+
+  if (loading || user) {
+    // Either still checking for a session, or one was just found and the
+    // redirect effect above is about to navigate away — render nothing
+    // rather than flash the signup form in either case.
+    return null;
   }
 
   return (

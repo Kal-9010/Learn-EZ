@@ -3,8 +3,7 @@
 -- Run this in the Supabase SQL editor on a fresh project. Safe to run once;
 -- re-running will error on "already exists" (expected, not harmful).
 --
--- Two deliberate departures from the PRD's literal section 8 SQL, both
--- security-motivated:
+-- Three deliberate departures from the PRD's literal section 8 SQL:
 --   1. users.id now REFERENCES auth.users(id) instead of a bare random uuid.
 --      Without this link, Row Level Security has no way to know which row
 --      belongs to which logged-in user — "auth.uid() = id" only works once
@@ -14,6 +13,12 @@
 --      design (see src/lib/supabase.js) — would leave every row in every
 --      table readable and writable by anyone. That directly contradicts the
 --      project's "no data leaks" requirement, so this isn't optional.
+--   3. user_progress.sub_topic_id is `text`, not `uuid references sub_topics`.
+--      The PRD's schema assumes curriculum content lives in the sub_topics
+--      table; today it actually lives in src/data/seed/*.js, keyed by slugs
+--      like 'product-vision-statement'. A UUID foreign key to an empty table
+--      would just fail on every insert. This can migrate to a real FK later
+--      if/when content moves server-side — not a blocker for progress sync now.
 
 -- ============================================================
 -- TABLES
@@ -74,7 +79,7 @@ create table scenarios (
 create table user_progress (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references users(id) on delete cascade,
-  sub_topic_id uuid references sub_topics(id),
+  sub_topic_id text not null,
   status text check (status in (
     'not_started',
     'in_progress',
@@ -89,7 +94,8 @@ create table user_progress (
   time_spent integer default 0,
   loop_count integer default 0,
   last_accessed timestamptz default now(),
-  completed_at timestamptz
+  completed_at timestamptz,
+  unique (user_id, sub_topic_id)
 );
 
 -- Shown Scenarios (no repeats)
@@ -101,6 +107,36 @@ create table shown_scenarios (
   passed boolean default false,
   total_attempts integer default 0
 );
+
+-- ============================================================
+-- AUTO-CREATE users ROW ON SIGNUP
+-- ============================================================
+
+-- The PRD requires display_name to be "saved to users table" on signup.
+-- Inserting it from the client would race against Row Level Security if the
+-- project has email confirmation on (no session exists yet immediately after
+-- signUp()). A trigger runs with definer rights, sidestepping that entirely —
+-- this is Supabase's own recommended pattern for this exact situation.
+create function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.users (id, email, display_name, is_anonymous)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1)),
+    false
+  );
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
 
 -- ============================================================
 -- ROW LEVEL SECURITY

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useProgress } from '../context/ProgressContext.jsx';
 import { useUser } from '../context/UserContext.jsx';
+import { useCurrentTopic } from '../context/TopicContext.jsx';
 import { TOPICS_LIST } from '../data/topicsList.js';
 import PortfolioView from '../components/portfolio/PortfolioView.jsx';
 
@@ -11,6 +12,23 @@ const STATUS_META = {
   in_progress: { icon: '⏳', color: 'text-blue-600' },
   not_started: { icon: '🔒', color: 'text-slate-400' },
 };
+
+// Picks up "wherever they left off": the most recently touched in-progress
+// topic first, then one flagged needs_review, then the next unstarted topic
+// that actually has content — so "Continue" never points at a locked topic.
+function findContinueTopic(progress) {
+  const withContent = TOPICS_LIST.filter((t) => t.hasContent);
+
+  const inProgress = withContent
+    .filter((t) => progress[t.id]?.status === 'in_progress')
+    .sort((a, b) => (progress[b.id]?.last_accessed || 0) - (progress[a.id]?.last_accessed || 0));
+  if (inProgress.length) return inProgress[0];
+
+  const needsReview = withContent.find((t) => progress[t.id]?.status === 'needs_review');
+  if (needsReview) return needsReview;
+
+  return withContent.find((t) => (progress[t.id]?.status || 'not_started') === 'not_started');
+}
 
 function detailText(status, entry) {
   if (status === 'complete') return `${entry.quiz_accuracy ?? 0}%`;
@@ -46,8 +64,10 @@ function computeLocalPortfolio(progress, displayName) {
 }
 
 export default function Progress() {
+  const navigate = useNavigate();
   const { progress } = useProgress();
   const { isAnonymous, displayName, profilePublic, setProfilePublic } = useUser();
+  const { setCurrentSubTopicId } = useCurrentTopic();
   const [showShare, setShowShare] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -59,6 +79,7 @@ export default function Progress() {
     : 0;
 
   const profileUrl = `${window.location.origin}/profile/${displayName || ''}`;
+  const continueTopic = findContinueTopic(progress);
 
   function copyLink() {
     navigator.clipboard.writeText(profileUrl);
@@ -66,10 +87,25 @@ export default function Progress() {
     setTimeout(() => setCopied(false), 1500);
   }
 
+  function handleContinue() {
+    setCurrentSubTopicId(continueTopic.id);
+    navigate('/learn');
+  }
+
   return (
     <main className="min-h-full px-5 pb-24 pt-16">
       <div className="mb-1 text-xs font-semibold text-slate-500">Overall mastery</div>
       <div className="mb-6 text-4xl font-extrabold text-slate-900">{overallMastery}%</div>
+
+      {continueTopic && (
+        <button
+          type="button"
+          onClick={handleContinue}
+          className="mb-6 flex h-[52px] w-full items-center justify-center rounded-2xl bg-blue-600 text-[15px] font-bold text-white"
+        >
+          Continue: {continueTopic.title} →
+        </button>
+      )}
 
       <div className="mb-6 flex flex-col gap-2">
         {TOPICS_LIST.map((topic) => {
