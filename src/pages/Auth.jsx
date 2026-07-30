@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import FormField from '../components/FormField.jsx';
-import GoogleIcon from '../components/GoogleIcon.jsx';
 import { useUser } from '../context/UserContext.jsx';
 import { supabase, isSupabaseConfigured } from '../lib/supabase.js';
 
@@ -103,19 +102,6 @@ export default function Auth() {
       }
       navigate('/progress');
     }
-  }
-
-  async function handleGoogleSignIn() {
-    setFormError(null);
-    if (!isSupabaseConfigured) {
-      setFormError({ message: NOT_CONNECTED_MESSAGE });
-      return;
-    }
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/onboarding` },
-    });
-    if (error) setFormError({ message: error.message });
   }
 
   if (loading || user) {
@@ -220,21 +206,6 @@ export default function Auth() {
         className="mt-3.5 text-center text-sm font-semibold text-slate-500"
       >
         {isSignup ? 'Already have an account? Log in' : 'New here? Create an account'}
-      </button>
-
-      <div className="my-5 flex items-center gap-2.5">
-        <div className="h-px flex-1 bg-slate-200" />
-        <span className="text-xs text-slate-400">or continue with</span>
-        <div className="h-px flex-1 bg-slate-200" />
-      </div>
-
-      <button
-        type="button"
-        onClick={handleGoogleSignIn}
-        className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700"
-      >
-        <GoogleIcon className="h-4 w-4" />
-        Continue with Google
       </button>
     </main>
   );
