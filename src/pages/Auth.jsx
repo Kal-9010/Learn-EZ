@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import FormField from '../components/FormField.jsx';
@@ -12,11 +12,19 @@ const NOT_CONNECTED_MESSAGE =
 export default function Auth() {
   const navigate = useNavigate();
   const { user, loading, startAnonymousSession } = useUser();
+  // Without email confirmation, signUp()/signInWithPassword() create a
+  // session instantly — which makes the auto-redirect effect below fire
+  // *during* handleSubmit, racing its own navigate() call and winning
+  // (both new signups and logins would otherwise always land on /progress,
+  // even a brand-new signup with nothing to show there yet). This ref lets
+  // the effect tell "a session already existed on mount" apart from "we
+  // just created one ourselves", so handleSubmit's explicit destination wins.
+  const justSubmittedRef = useRef(false);
 
   // A returning user with a still-valid session shouldn't see the signup
   // form again — send them straight to their progress.
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !justSubmittedRef.current) {
       navigate('/progress', { replace: true });
     }
   }, [loading, user, navigate]);
@@ -73,6 +81,7 @@ export default function Auth() {
       return;
     }
 
+    justSubmittedRef.current = true;
     setSubmitting(true);
 
     if (isSignup) {
