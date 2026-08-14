@@ -42,12 +42,12 @@ STRICT RULES:
  * callers (Phase 3) can fall back to seed content per the PRD's AI
  * error-state table (section 10) instead of breaking the teaching flow.
  */
-export async function askGroq({ systemPrompt, userPrompt, jsonMode = true, maxTokens }) {
+export async function askGroq({ systemPrompt, userPrompt, jsonMode = true, maxTokens, temperature }) {
   try {
     const response = await fetch('/api/groq', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ systemPrompt, userPrompt, jsonMode, maxTokens }),
+      body: JSON.stringify({ systemPrompt, userPrompt, jsonMode, maxTokens, temperature }),
     });
     return await response.json();
   } catch (error) {

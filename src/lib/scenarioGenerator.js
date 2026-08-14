@@ -81,7 +81,10 @@ export async function generateScenarioBatch({ topic, seedScenarios, shownSituati
   const userPrompt = buildUserPrompt(topic);
 
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const result = await askGroq({ systemPrompt, userPrompt, jsonMode: true, maxTokens: 3000 });
+    // Higher than the app's default 0.7 — Llama tends to converge on the
+    // same "greedy" company/situation for generic PM prompts otherwise,
+    // which is most of why repeats were happening even with fresh calls.
+    const result = await askGroq({ systemPrompt, userPrompt, jsonMode: true, maxTokens: 3000, temperature: 1.0 });
     if (result.ok && isValidBatch(result.data)) {
       return { scenarios: result.data.scenarios, isFresh: true };
     }

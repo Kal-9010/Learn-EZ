@@ -19,8 +19,8 @@ export default function groqDevMiddleware() {
         req.on('end', async () => {
           res.setHeader('Content-Type', 'application/json');
           try {
-            const { systemPrompt, userPrompt, jsonMode, maxTokens } = body ? JSON.parse(body) : {};
-            const result = await handleGroqRequest({ systemPrompt, userPrompt, jsonMode, maxTokens });
+            const { systemPrompt, userPrompt, jsonMode, maxTokens, temperature } = body ? JSON.parse(body) : {};
+            const result = await handleGroqRequest({ systemPrompt, userPrompt, jsonMode, maxTokens, temperature });
             res.statusCode = result.ok ? 200 : 502;
             res.end(JSON.stringify(result));
           } catch {

@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { systemPrompt, userPrompt, jsonMode, maxTokens } = req.body || {};
-  const result = await handleGroqRequest({ systemPrompt, userPrompt, jsonMode, maxTokens });
+  const { systemPrompt, userPrompt, jsonMode, maxTokens, temperature } = req.body || {};
+  const result = await handleGroqRequest({ systemPrompt, userPrompt, jsonMode, maxTokens, temperature });
   res.status(result.ok ? 200 : 502).json(result);
 }

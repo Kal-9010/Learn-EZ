@@ -11,6 +11,7 @@ import { useProgress } from '../context/ProgressContext.jsx';
 import { generateFreshAnalogy } from '../lib/freshAnalogy.js';
 import { generateFailureFeedback } from '../lib/scenarioFeedback.js';
 import { generateScenarioBatch } from '../lib/scenarioGenerator.js';
+import { getShownSituations, recordShownSituations } from '../lib/shownScenarios.js';
 import { SEED_TOPICS, DEFAULT_TOPIC_ID, getNextContentTopicId } from '../data/seed/index.js';
 
 export default function Learn() {
@@ -67,11 +68,14 @@ export default function Learn() {
     // through the teaching layers. Never overwrites a test the user has
     // already started on the seed fallback (see scenarioModeEnteredRef).
     let cancelled = false;
-    generateScenarioBatch({ topic: subTopic.topic, seedScenarios: subTopic.scenarios }).then((result) => {
-      if (!cancelled && !scenarioModeEnteredRef.current) {
-        setGeneratedScenarios(result.scenarios);
+    const shownSituations = getShownSituations(subTopic.id);
+    generateScenarioBatch({ topic: subTopic.topic, seedScenarios: subTopic.scenarios, shownSituations }).then(
+      (result) => {
+        if (cancelled) return;
+        if (result.isFresh) recordShownSituations(subTopic.id, result.scenarios);
+        if (!scenarioModeEnteredRef.current) setGeneratedScenarios(result.scenarios);
       }
-    });
+    );
 
     // Deliberately keyed only on the topic id — progress/updateProgress are
     // stable-enough context values and including them would re-run this on
