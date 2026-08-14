@@ -11,3 +11,30 @@ body {
   background: #fff;
   color-scheme: light;
 }
+
+/* Onboarding swipe demo — a single looping timeline shared by the hand,
+   the mock card, and the two direction stamps so they all stay in sync. */
+@keyframes swipe-demo-hand {
+  0%, 8% { translate: 0 0; }
+  28%, 46% { translate: 74px 0; }
+  50%, 58% { translate: 0 0; }
+  78%, 96% { translate: -74px 0; }
+  100% { translate: 0 0; }
+}
+@keyframes swipe-demo-card {
+  0%, 8% { translate: 0 0; rotate: 0deg; }
+  28%, 46% { translate: 40px 0; rotate: 6deg; }
+  50%, 58% { translate: 0 0; rotate: 0deg; }
+  78%, 96% { translate: -40px 0; rotate: -6deg; }
+  100% { translate: 0 0; rotate: 0deg; }
+}
+@keyframes swipe-demo-stamp-right {
+  0%, 24% { opacity: 0; }
+  30%, 44% { opacity: 1; }
+  48%, 100% { opacity: 0; }
+}
+@keyframes swipe-demo-stamp-left {
+  0%, 74% { opacity: 0; }
+  80%, 94% { opacity: 1; }
+  98%, 100% { opacity: 0; }
+}
