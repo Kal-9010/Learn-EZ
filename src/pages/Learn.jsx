@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ErrorBoundary from '../components/ErrorBoundary.jsx';
 import TeachingCard from '../components/teaching/TeachingCard.jsx';
@@ -10,6 +10,7 @@ import { useCurrentTopic } from '../context/TopicContext.jsx';
 import { useProgress } from '../context/ProgressContext.jsx';
 import { generateFreshAnalogy } from '../lib/freshAnalogy.js';
 import { generateFailureFeedback } from '../lib/scenarioFeedback.js';
+import { generateScenarioBatch } from '../lib/scenarioGenerator.js';
 import { SEED_TOPICS, DEFAULT_TOPIC_ID, getNextContentTopicId } from '../data/seed/index.js';
 
 export default function Learn() {
@@ -26,6 +27,14 @@ export default function Learn() {
   const [passedResult, setPassedResult] = useState({ accuracy: 0, timeSpentMin: 0, scenariosPassed: 0 });
   const [failedFeedback, setFailedFeedback] = useState(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
+
+  // AI-generated scenario batch for the active topic, cached per topic
+  // selection (not regenerated on retry — see the ref guard below).
+  const [generatedScenarios, setGeneratedScenarios] = useState(null);
+  // Flips true the moment the user actually enters scenario mode, so a
+  // still-in-flight generation call can never swap the scenario set out
+  // from under a test that's already using the seed fallback.
+  const scenarioModeEnteredRef = useRef(false);
 
   // Onboarding's topic-selection screen isn't built yet (flagged before Phase 3)
   // — default to a seed sub-topic so /learn works standalone.
@@ -46,13 +55,30 @@ export default function Learn() {
     setFreshVersion(0);
     setPreviousHeadlines([]);
     setCurrentLayerIndex(1);
+    setGeneratedScenarios(null);
+    scenarioModeEnteredRef.current = false;
 
     if (!progress[subTopic.id]) {
       updateProgress(subTopic.id, { status: 'in_progress', current_layer: 1, last_accessed: Date.now() });
     }
+
+    // Fire the scenario batch generation now, in the background, so it's
+    // ready well before the user reaches scenario mode after reading
+    // through the teaching layers. Never overwrites a test the user has
+    // already started on the seed fallback (see scenarioModeEnteredRef).
+    let cancelled = false;
+    generateScenarioBatch({ topic: subTopic.topic, seedScenarios: subTopic.scenarios }).then((result) => {
+      if (!cancelled && !scenarioModeEnteredRef.current) {
+        setGeneratedScenarios(result.scenarios);
+      }
+    });
+
     // Deliberately keyed only on the topic id — progress/updateProgress are
     // stable-enough context values and including them would re-run this on
     // every progress update, not just on an actual topic switch.
+    return () => {
+      cancelled = true;
+    };
   }, [subTopic.id]);
 
   const seedLayer1 = subTopic.layers[0];
@@ -79,6 +105,7 @@ export default function Learn() {
   }
 
   function handleSwipeRight() {
+    scenarioModeEnteredRef.current = true;
     setMode('scenario');
   }
 
@@ -168,7 +195,7 @@ export default function Learn() {
       {mode === 'scenario' && (
         <ScenarioTest
           topicName={subTopic.topic}
-          scenarios={subTopic.scenarios}
+          scenarios={generatedScenarios || subTopic.scenarios}
           onAllPassed={handleAllPassed}
           onAllFailed={handleAllFailed}
         />

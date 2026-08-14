@@ -8,7 +8,7 @@ export default function ScenarioTest({ topicName, scenarios, onAllPassed, onAllF
   const [selected, setSelected] = useState(null);
   const [answerState, setAnswerState] = useState('unselected'); // unselected|selected|wrong1|correct|wrong2
   const [scenarioAnswers, setScenarioAnswers] = useState([]);
-  const [scenarioResults, setScenarioResults] = useState([null, null, null]);
+  const [scenarioResults, setScenarioResults] = useState(() => Array(scenarios.length).fill(null));
   const [transition, setTransition] = useState(null); // null|'passed'|'failed'
   const [seeWrong, setSeeWrong] = useState(false);
   const [scenarioWrongLog, setScenarioWrongLog] = useState([]);
@@ -96,7 +96,7 @@ export default function ScenarioTest({ topicName, scenarios, onAllPassed, onAllF
           ? Math.round((log.filter((l) => l.firstAttemptCorrect).length / log.length) * 100)
           : 0;
 
-        if (passedCount >= 2) {
+        if (passedCount >= Math.ceil(scenarios.length / 2)) {
           onAllPassed({ accuracy, timeSpentMin, scenariosPassed: passedCount });
         } else {
           onAllFailed({ wrongAnswers: log.filter((l) => !l.correct), scenariosPassed: passedCount });

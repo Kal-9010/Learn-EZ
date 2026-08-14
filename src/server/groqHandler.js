@@ -31,7 +31,7 @@ function getClient() {
  * callers get a normalized { ok, data | error } result so they can fall
  * back to seed content per the PRD's AI error-state table (section 10).
  */
-export async function handleGroqRequest({ systemPrompt, userPrompt, jsonMode = true }) {
+export async function handleGroqRequest({ systemPrompt, userPrompt, jsonMode = true, maxTokens = 1024 }) {
   const groq = getClient();
   if (!groq) {
     return { ok: false, error: 'groq_not_configured' };
@@ -48,7 +48,7 @@ export async function handleGroqRequest({ systemPrompt, userPrompt, jsonMode = t
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.7,
-      max_tokens: 1024,
+      max_tokens: maxTokens,
       ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
     });
 
