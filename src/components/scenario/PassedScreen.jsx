@@ -1,4 +1,17 @@
+import { useEffect } from 'react';
+import confetti from 'canvas-confetti';
+
 export default function PassedScreen({ topicName, accuracy, timeSpentMin, onNextTopic }) {
+  useEffect(() => {
+    confetti({
+      particleCount: 120,
+      spread: 80,
+      startVelocity: 40,
+      origin: { y: 0.6 },
+      colors: ['#2563eb', '#16a34a', '#f59e0b'],
+    });
+  }, []);
+
   return (
     <main className="flex h-[100dvh] flex-col items-center justify-center px-7 py-16 text-center">
       <div className="mb-3.5 text-6xl">🎉</div>
