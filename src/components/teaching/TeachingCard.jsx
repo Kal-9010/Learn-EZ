@@ -14,6 +14,7 @@ const LAYER_COMPONENTS = { 1: Layer1, 2: Layer2, 3: Layer3, 4: Layer4 };
 
 export default function TeachingCard({ topicName, layerIndex, layer, cardKey, onSwipeLeft, onSwipeRight }) {
   const [openTooltip, setOpenTooltip] = useState(null);
+  const [swipeStamp, setSwipeStamp] = useState(null); // null | 'left' | 'right'
   const LayerBody = LAYER_COMPONENTS[layerIndex];
 
   function handleCardLeftScreen(dir) {
@@ -41,11 +42,26 @@ export default function TeachingCard({ topicName, layerIndex, layer, cardKey, on
 
       <TinderCard
         onCardLeftScreen={handleCardLeftScreen}
+        onSwipeRequirementFulfilled={(dir) => setSwipeStamp(dir)}
+        onSwipeRequirementUnfulfilled={() => setSwipeStamp(null)}
         preventSwipe={['up', 'down']}
         swipeRequirementType="position"
         swipeThreshold={100}
-        className="flex h-full w-full flex-col bg-white"
+        className="relative flex h-full w-full flex-col bg-white"
       >
+        {swipeStamp && (
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute top-6 z-30 -rotate-6 rounded-xl border-4 px-4 py-1.5 text-lg font-extrabold uppercase tracking-wide ${
+              swipeStamp === 'right'
+                ? 'right-6 border-green-500 text-green-500'
+                : 'left-6 border-blue-500 text-blue-500'
+            }`}
+          >
+            {swipeStamp === 'right' ? 'Got it' : 'Go deeper'}
+          </div>
+        )}
+
         <LayerProgressBar topicName={topicName} percent={layerIndex * 25} />
 
         <div className="flex-1 overflow-auto px-5 pb-2 pt-4">
