@@ -29,6 +29,16 @@ export default function TeachingCard({ topicName, layerIndex, layer, cardKey, on
       transition={{ duration: 0.3 }}
       className="relative flex flex-1 flex-col overflow-hidden"
     >
+      {/* Static stack-depth silhouettes — purely decorative, suggest more cards behind the active one */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-5 bottom-0 top-3 rounded-3xl bg-white/50"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-8 bottom-0 top-6 rounded-3xl bg-white/70"
+      />
+
       <TinderCard
         onCardLeftScreen={handleCardLeftScreen}
         preventSwipe={['up', 'down']}
